@@ -1,0 +1,11 @@
+sudo: false
+language: c
+compiler:
+  - gcc
+addons:
+  apt:
+    packages:
+      - cmake
+script:
+  - cmake .
+  - make
