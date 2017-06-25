@@ -4,6 +4,8 @@ project(libisolation)
 
 include(GNUInstallDirs)
 
+add_subdirectory(lib/libhypervisor)
+
 include_directories(include)
 
 set(SOURCES
@@ -13,6 +15,8 @@ set(HEADERS
   include/isolation.h)
 
 add_library(isolation SHARED ${SOURCES})
+
+target_link_libraries(isolation hypervisor)
 
 install(TARGETS isolation DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

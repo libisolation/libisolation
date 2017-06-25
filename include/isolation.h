@@ -5,6 +5,9 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
+#include <stdint.h>
+
 /*
  * Initialize/destroy libisolation.
  * Run once for each in one program.
