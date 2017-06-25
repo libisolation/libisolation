@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -38,6 +39,14 @@ vmm_create(void)
 }
 
 int
+vmm_destroy(void)
+{
+  close(vmfd);
+  close(kvm);
+  return 0;
+}
+
+int
 vmm_memory_map(vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, vmm_memory_flags_t flags)
 {
   struct kvm_userspace_memory_region region = {
@@ -55,7 +64,7 @@ vmm_memory_map(vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, vmm_memory_flags
 }
 
 int
-vmm_cpu_create()
+vmm_cpu_create(void)
 {
   int mmap_size;
 
@@ -72,7 +81,15 @@ vmm_cpu_create()
 }
 
 int
-vmm_cpu_run()
+vmm_cpu_destroy(void)
+{
+  close(vcpufd);
+  run = NULL;
+  return 0;
+}
+
+int
+vmm_cpu_run(void)
 {
   if (ioctl(vcpufd, KVM_RUN, NULL) < 0)
     return VMM_ERROR;

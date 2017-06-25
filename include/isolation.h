@@ -8,12 +8,6 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-/*
- * Initialize/destroy libisolation.
- * Run once for each in one program.
- */
-int isl_init(void);
-int isl_destroy(void);
 
 typedef int isl_handle_t;
 
@@ -52,8 +46,8 @@ typedef enum {
  * NB: Currently isl_call only supports one argument; args must be always an array of one pointer to some pointer.
  * TODO: add a parameter to specify which events are trapped.
  */
-isl_return_t isl_call(int handle, isl_sym_t f, void *args[]);
-isl_return_t isl_resume(int handle);
+isl_return_t isl_call(int handle, isl_sym_t f, void *args[], void **ret);
+isl_return_t isl_resume(int handle, void **ret);
 
 /*
  * Allow/disallow the program in the VM to read/write/execute a memory region specified by _addr_ and _length_.
