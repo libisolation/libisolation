@@ -1,0 +1,117 @@
+#! /usr/bin/perl
+
+use strict;
+use warnings;
+use Getopt::Long;
+use Pod::Usage;
+use File::stat;
+use Cwd;
+
+our $VERSION = "@PROJECT_VERSION@";
+
+my ($root, $strace, $output);
+
+GetOptions(
+  'root=s' => \$root,
+  'strace=s' => \$strace,
+  'output=s' => \$output,
+  'h|help' => sub {
+    pod2usage(1);
+  },
+  'v|version' => sub {
+    print "$VERSION\n";
+    exit 0;
+  }
+) or exit 1;
+
+my $noahdir = "$ENV{HOME}/.noah";
+
+if (! -d $noahdir) {
+  mkdir $noahdir;
+}
+
+if (! defined $root) {
+  $root = "$noahdir/tree";
+  if (! -d $root) {
+    prompt_yn("Noah is installing the initial filesystem in ~/.noah/tree. Proceed? [Y/n]", "y") or exit 1;
+    system "sudo noahstrap -p ubuntu $root";
+  }
+}
+
+my $noah = "@CMAKE_INSTALL_PREFIX@/libexec/noah";
+
+if ($> != 0) {
+  my $st = stat $noah;
+  if ($st->uid != 0 || ($st->mode & 04000) == 0) {
+    if (prompt_yn("Allow noah to run as root? It's necessary for privileged commands such as sudo.\nNoah is still under development, so please enable it at your own risk! [y/N]", "n")) {
+      system "sudo chown root:admin $noah";
+      system "sudo chmod u+s $noah";
+    } else {
+      print "* Running noah as normal user... This may cause unstable behavior of sudo executed from inside noah.\n";
+    }
+  }
+}
+
+my $init = "/bin/bash -i";
+if (@ARGV != 0) {
+  $init = "@ARGV";
+}
+
+my $opts = "";
+if (defined $strace) {
+  $opts .= "--strace $strace ";
+}
+if (defined $output) {
+  $opts .= "--output $output ";
+}
+
+#system "lldb -- ${noah} -m $root $opts $init";
+system "${noah} -m $root $opts $init";
+
+sub prompt_yn {
+  my ($query, $default) = @_;
+  my $ans = prompt($query);
+  $ans = $default if ($ans eq '');
+  return ($ans eq 'y' or $ans eq 'Y');
+}
+
+sub prompt {
+  my ($query) = @_; # take a prompt string as argument
+  local $| = 1; # activate autoflush to immediately show the prompt
+  print $query . " ";
+  chomp(my $answer = <STDIN>);
+  return $answer;
+}
+
+__END__
+
+=head1 NAME
+
+noah -- Darwin Subsystem for Linux
+
+=head1 SYNOPSIS
+
+    noah [OPTION...]
+    noah [OPTION...] path_to_executable [ARG...]
+
+=head1 DESCRIPTION
+
+TBA
+
+=head1 OPTIONS
+
+=head2 --root=DIR
+
+Use DIR as root fs.
+
+=head2 --help, -h
+
+Shows this message.
+
+=head2 --version, -v
+
+Shows version information.
+
+=head1 AUTHORS
+
+Yuichi Nishiwaki, and Takaya Saeki

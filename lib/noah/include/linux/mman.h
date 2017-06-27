@@ -1,0 +1,49 @@
+#ifndef NOAH_LINUX_MMAN_H
+#define NOAH_LINUX_MMAN_H
+
+#define LINUX_PROT_NONE  0x0
+#define LINUX_PROT_READ  0x1
+#define LINUX_PROT_WRITE 0x2
+#define LINUX_PROT_EXEC  0x4
+
+#define LINUX_MAP_FILE       0
+#define LINUX_MAP_SHARED     0x1
+#define LINUX_MAP_PRIVATE    0x2
+#define LINUX_MAP_TYPE       0xf
+#define LINUX_MAP_FIXED      0x10
+#define LINUX_MAP_ANON       0x20
+#define LINUX_MAP_ANONYMOUS  LINUX_MAP_ANON
+#define LINUX_MAP_GROWSDOWN  0x0100
+#define LINUX_MAP_DENYWRITE  0x0800
+#define LINUX_MAP_EXECUTABLE 0x1000
+#define LINUX_MAP_LOCKED     0x2000
+#define LINUX_MAP_NORESERVE  0x4000
+#define LINUX_MAP_POPULATE   0x8000
+#define LINUX_MAP_NONBLOCK   0x10000
+#define LINUX_MAP_STACK      0x20000
+#define LINUX_MAP_HUGETLB    0x40000
+
+#define LINUX_MREMAP_MAYMOVE	1
+#define LINUX_MREMAP_FIXED	2
+
+/* NUMA policies & flags */
+
+#define LINUX_MPOL_DEFAULT    0
+#define LINUX_MPOL_PREFERRED  1
+#define LINUX_MPOL_BIND       2
+#define LINUX_MPOL_INTERLEAVE 3
+
+#define LINUX_MPOL_F_NODE         1
+#define LINUX_MPOL_F_ADDR         2
+#define LINUX_MPOL_F_MEMS_ALLOWED 4
+
+#define LINUX_MPOL_MF_STRICT   1
+#define LINUX_MPOL_MF_MOVE     2
+#define LINUX_MPOL_MF_MOVE_ALL 4
+#define LINUX_MPOL_MF_INTERNAL 8
+
+#define LINUX_MS_ASYNC         1
+#define LINUX_MS_SYNC          2
+#define LINUX_MS_INVALIDATE    4
+
+#endif
