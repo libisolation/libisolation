@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 
@@ -43,8 +44,11 @@ int main(void)
     0xf4,             /* hlt */
   };
   uint8_t *mem;
+  int ret;
 
-  vmm_create();
+  vmm_vmid_t vm;
+  ret = vmm_create(&vm);
+  assert(ret == 0);
 
   /* Allocate one aligned page of guest memory to hold the code. */
   mem = mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
@@ -55,26 +59,31 @@ int main(void)
   memcpy(mem, code, sizeof(code));
 
   /* Map it to the second page frame (to avoid the real-mode IDT at 0). */
-  vmm_memory_map(mem, 0x1000, 0x1000, 0);
+  ret = vmm_memory_map(vm, mem, 0x1000, 0x1000, 0);
+  assert(ret == 0);
 
-  vmm_cpu_create();
+  vmm_cpuid_t cpu;
+  ret = vmm_cpu_create(vm, &cpu);
+  assert(ret == 0);
 
   /*
    * Initialize CS to point at 0, via a read-modify-write of sregs.
    * Initialize registers: instruction pointer for our code, addends, and
    * initial flags required by x86 architecture.
    */
-  vmm_cpu_write_register(VMM_X64_CS, 0);
-  vmm_cpu_write_register(VMM_X64_RIP, 0x1000);
-  vmm_cpu_write_register(VMM_X64_RAX, 2);
-  vmm_cpu_write_register(VMM_X64_RBX, 2);
-  vmm_cpu_write_register(VMM_X64_RFLAGS, 0x2);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_CS, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RIP, 0x1000);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RAX, 2);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RBX, 2);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RFLAGS, 0x2);
 
   /* Repeatedly run code and handle VM exits. */
   while (1) {
-    vmm_cpu_run();
+    ret = vmm_cpu_run(vm);
+    assert(ret == 0);
     uint64_t exit_reason, value;
-    vmm_get(VMM_CTRL_EXIT_REASON, &exit_reason);
+    ret = vmm_get(vm, VMM_CTRL_EXIT_REASON, &exit_reason);
+    assert(ret == 0);
     switch (exit_reason) {
     case VMM_EXIT_HLT:
       puts("KVM_EXIT_HLT");
@@ -85,7 +94,8 @@ int main(void)
       //else
       //  errx(1, "unhandled KVM_EXIT_IO");
       //break;
-      vmm_cpu_read_register(VMM_X64_RAX, &value);
+      ret = vmm_cpu_get_register(vm, cpu, VMM_X64_RAX, &value);
+      assert(ret == 0);
       putchar((char) value);
       break;
     /* case KVM_EXIT_FAIL_ENTRY: */
@@ -94,7 +104,8 @@ int main(void)
     /* case KVM_EXIT_INTERNAL_ERROR: */
     /*   errx(1, "KVM_EXIT_INTERNAL_ERROR: suberror = 0x%x", run->internal.suberror); */
     default:
-     vmm_cpu_read_register(VMM_X64_RIP, &value);
+     ret = vmm_cpu_get_register(vm, cpu, VMM_X64_RIP, &value);
+     assert(ret == 0);
      fprintf(stderr, "ip = 0x%lx\n", value);
      fprintf(stderr, "exit_reason = 0x%lx", exit_reason);
      abort();

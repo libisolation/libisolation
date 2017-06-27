@@ -12,19 +12,21 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-static int kvm, vmfd;
-static struct kvm_run *run;
-static struct kvm_regs regs;
-static struct kvm_sregs sregs;
-static int vcpufd;
+static int kvm = -1;
+static __thread int vcpufd = -1;
+static __thread struct kvm_run *run;
+static int mmap_size = -1;
 
 int
-vmm_create(void)
+vmm_create(vmm_vmid_t *vm)
 {
   int ret;
 
-  if ((kvm = open("/dev/kvm", O_RDWR | O_CLOEXEC)) < 0)
-    return VMM_ENOTSUP;
+  if (kvm < 0) {
+    if ((kvm = open("/dev/kvm", O_RDWR | O_CLOEXEC)) < 0) {
+      return VMM_ENOTSUP;
+    }
+  }
 
   /* check API version */
   if ((ret = ioctl(kvm, KVM_GET_API_VERSION, NULL)) < 0)
@@ -32,64 +34,68 @@ vmm_create(void)
   if (ret != 12)
     return VMM_ENOTSUP;
 
-  if ((vmfd = ioctl(kvm, KVM_CREATE_VM, 0UL)) < 0)
+  if ((*vm = ioctl(kvm, KVM_CREATE_VM, 0UL)) < 0)
     return VMM_ERROR;
 
   return 0;
 }
 
 int
-vmm_destroy(void)
+vmm_destroy(vmm_vmid_t vm)
 {
-  close(vmfd);
-  close(kvm);
+  close(vm);
   return 0;
 }
 
 int
-vmm_memory_map(vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, vmm_memory_flags_t flags)
+vmm_memory_map(vmm_vmid_t vm, vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, vmm_memory_flags_t flags)
 {
   struct kvm_userspace_memory_region region = {
     .slot = 0,
+    .flags = 0,
     .guest_phys_addr = gpa,
     .memory_size = size,
     .userspace_addr = (uint64_t)uva,
   };
   int ret;
 
-  if ((ret = ioctl(vmfd, KVM_SET_USER_MEMORY_REGION, &region)) < 0)
+  if ((ret = ioctl(vm, KVM_SET_USER_MEMORY_REGION, &region)) < 0)
     return VMM_ERROR;
 
   return 0;
 }
 
 int
-vmm_cpu_create(void)
+vmm_cpu_create(vmm_vmid_t vm, vmm_cpuid_t *cpu)
 {
-  int mmap_size;
-
-  if ((vcpufd = ioctl(vmfd, KVM_CREATE_VCPU, 0UL)) < 0)
+  if ((vcpufd = ioctl(vm, KVM_CREATE_VCPU, 0UL)) < 0)
     return VMM_ERROR;
+
+  *cpu = vcpufd;
 
   /* Map the shared kvm_run structure and following data. */
-  if ((mmap_size = ioctl(kvm, KVM_GET_VCPU_MMAP_SIZE, NULL)) < 0)
+  if (mmap_size < 0) {
+    if ((mmap_size = ioctl(kvm, KVM_GET_VCPU_MMAP_SIZE, NULL)) < 0)
+      return VMM_ERROR;
+  }
+  if ((run = mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, vcpufd, 0)) == MAP_FAILED)
     return VMM_ERROR;
-  if ((run = mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, vcpufd, 0)) == 0)
-    return VMM_ERROR;
-
+  assert(run != 0);
   return 0;
 }
 
 int
-vmm_cpu_destroy(void)
+vmm_cpu_destroy(vmm_vmid_t vm)
 {
-  close(vcpufd);
+  if (munmap(run, mmap_size) < 0)
+    return -VMM_ERROR;
   run = NULL;
+  close(vcpufd);
   return 0;
 }
 
 int
-vmm_cpu_run(void)
+vmm_cpu_run(vmm_vmid_t vm)
 {
   if (ioctl(vcpufd, KVM_RUN, NULL) < 0)
     return VMM_ERROR;
@@ -135,11 +141,14 @@ struct kvm_sregs {
 */
 
 int
-vmm_cpu_write_register(vmm_x64_reg_t reg, uint64_t value)
+vmm_cpu_set_register(vmm_vmid_t vm, vmm_cpuid_t cpu, vmm_x64_reg_t reg, uint64_t value)
 {
-  if (ioctl(vcpufd, KVM_GET_REGS, &regs) < 0)
+  static struct kvm_regs regs;
+  static struct kvm_sregs sregs;
+
+  if (ioctl(cpu, KVM_GET_REGS, &regs) < 0)
     return VMM_ERROR;
-  if (ioctl(vcpufd, KVM_GET_SREGS, &sregs) < 0)
+  if (ioctl(cpu, KVM_GET_SREGS, &sregs) < 0)
     return VMM_ERROR;
 
   switch (reg) {
@@ -199,20 +208,23 @@ vmm_cpu_write_register(vmm_x64_reg_t reg, uint64_t value)
     assert(false);
   }
 
-  if (ioctl(vcpufd, KVM_SET_REGS, &regs) < 0)
+  if (ioctl(cpu, KVM_SET_REGS, &regs) < 0)
     return VMM_ERROR;
-  if (ioctl(vcpufd, KVM_SET_SREGS, &sregs) < 0)
+  if (ioctl(cpu, KVM_SET_SREGS, &sregs) < 0)
     return VMM_ERROR;
 
   return 0;
 }
 
 int
-vmm_cpu_read_register(vmm_x64_reg_t reg, uint64_t *value)
+vmm_cpu_get_register(vmm_vmid_t vm, vmm_cpuid_t cpu, vmm_x64_reg_t reg, uint64_t *value)
 {
-  if (ioctl(vcpufd, KVM_GET_REGS, &regs) < 0)
+  static struct kvm_regs regs;
+  static struct kvm_sregs sregs;
+
+  if (ioctl(cpu, KVM_GET_REGS, &regs) < 0)
     return VMM_ERROR;
-  if (ioctl(vcpufd, KVM_GET_SREGS, &sregs) < 0)
+  if (ioctl(cpu, KVM_GET_SREGS, &sregs) < 0)
     return VMM_ERROR;
 
   switch (reg) {
@@ -274,7 +286,7 @@ vmm_cpu_read_register(vmm_x64_reg_t reg, uint64_t *value)
 }
 
 int
-vmm_get(int id, uint64_t *value)
+vmm_get(vmm_vmid_t vm, int id, uint64_t *value)
 {
   assert(id == VMM_CTRL_EXIT_REASON);
 
