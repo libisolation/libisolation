@@ -1,4 +1,5 @@
 sudo: required
+dist: trusty
 language: c
 compiler:
   - gcc
@@ -7,5 +8,6 @@ addons:
     packages:
       - cmake
 script:
+  - cat /proc/cpuinfo
   - cmake .
   - make
