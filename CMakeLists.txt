@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(libisolation)
 
 include(GNUInstallDirs)
+enable_testing()
 
 add_subdirectory(lib/libhypervisor)
 
@@ -21,5 +22,4 @@ target_link_libraries(isolation hypervisor)
 install(TARGETS isolation DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-enable_testing()
 add_subdirectory(test)
