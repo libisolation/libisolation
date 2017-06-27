@@ -5,6 +5,10 @@ project(libisolation)
 include(GNUInstallDirs)
 enable_testing()
 
+set(CMAKE_C_FLAGS "-std=gnu11")
+set(CMAKE_C_FLAGS_RELEASE "-Wall -O2")
+set(CMAKE_C_FLAGS_DEBUG "-g -O0")
+
 add_subdirectory(lib/libhypervisor)
 
 include_directories(include lib/libhypervisor/include)
