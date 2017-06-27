@@ -7,6 +7,6 @@ node {
     sh '''mkdir -p build
       cd build
       cmake -DCMAKE_BUILD_TYPE=Release ..
-      make'''
+      make
+      make test ARGS=-V'''
 }
-
