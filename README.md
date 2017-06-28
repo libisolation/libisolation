@@ -1,4 +1,4 @@
-# libisolation
+# libisolation [![Build Status](http://integrat.edby.coffee:4242/buildStatus/icon?job=libisolation/master)](http://integrat.edby.coffee:4242/job/libisolation/job/master/)
 
 libisolation is an in-process software sandboxing library.
 
