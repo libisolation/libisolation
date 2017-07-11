@@ -456,6 +456,36 @@ vmm_cpu_get_register(vmm_vm_t vm, vmm_cpu_t cpu, vmm_x64_reg_t reg, uint64_t *va
 }
 
 int
+vmm_cpu_get_msr(vmm_vm_t vm, vmm_cpu_t cpu, uint32_t msr, uint64_t *value)
+{
+  char buf[offsetof(struct kvm_msrs, entries) + sizeof(struct kvm_msr_entry)];
+  struct kvm_msrs *kmsrs = (struct kvm_msrs *) buf;
+
+  kmsrs->nmsrs = 1;
+  kmsrs->entries[0].index = msr;
+  int r;
+  if ((r = ioctl(cpu->vcpufd, KVM_GET_MSRS, kmsrs)) < 0)
+    return -errno;
+  *value = kmsrs->entries[0].data;
+  return 0;
+}
+
+int
+vmm_cpu_set_msr(vmm_vm_t vm, vmm_cpu_t cpu, uint32_t msr, uint64_t value)
+{
+  char buf[offsetof(struct kvm_msrs, entries) + sizeof(struct kvm_msr_entry)];
+  struct kvm_msrs *kmsrs = (struct kvm_msrs *) buf;
+
+  kmsrs->nmsrs = 1;
+  kmsrs->entries[0].index = msr;
+  kmsrs->entries[0].data = value;
+  int r;
+  if ((r = ioctl(cpu->vcpufd, KVM_SET_MSRS, kmsrs)) < 0)
+    return -errno;
+  return 0;
+}
+
+int
 vmm_cpu_get_state(vmm_vm_t vm, vmm_cpu_t cpu, int id, uint64_t *value)
 {
   switch (id) {
