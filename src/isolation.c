@@ -19,7 +19,7 @@
 typedef unsigned long ulong;
 
 static int
-load_elf(vmm_vmid_t vm, Elf64_Ehdr *ehdr)
+load_elf(vmm_vm_t vm, Elf64_Ehdr *ehdr)
 {
   assert(IS_ELF(*ehdr));
 
@@ -90,7 +90,7 @@ load_elf(vmm_vmid_t vm, Elf64_Ehdr *ehdr)
 }
 
 static int
-do_load(vmm_vmid_t vm, const char *elf_path)
+do_load(vmm_vm_t vm, const char *elf_path)
 {
   int fd;
   if ((fd = open(elf_path, O_RDONLY)) < 0) {
@@ -120,46 +120,46 @@ do_load(vmm_vmid_t vm, const char *elf_path)
   return 0;
 }
 
-static vmm_vmid_t vmid;
-static vmm_cpuid_t cpuid;
+static vmm_vm_t vm;
+static vmm_cpu_t cpu;
 
 isl_handle_t
 isl_open(const char *filename)
 {
-  if (vmm_create(&vmid) < 0)
+  if (vmm_create(&vm) < 0)
     return -1;
-  if (vmm_cpu_create(vmid, &cpuid) < 0)
-    return -1;
-
-  if (do_load(vmid, filename) < 0)
+  if (vmm_cpu_create(vm, &cpu) < 0)
     return -1;
 
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_RAX, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_RBX, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_RCX, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_RDX, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_RSI, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_RDI, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_R8, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_R9, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_R10, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_R11, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_R12, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_R13, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_R14, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_R15, 0);
+  if (do_load(vm, filename) < 0)
+    return -1;
 
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_FS, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_ES, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_GS, 0);
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_DS, 0);
-//  vmm_cpu_set_register(vmid, cpuid, VMM_X64_CS, GSEL(SEG_CODE, 0));
-//  vmm_cpu_set_register(vmid, cpuid, VMM_X64_DS, GSEL(SEG_DATA, 0));
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RAX, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RBX, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RCX, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RDX, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RSI, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RDI, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_R8, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_R9, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_R10, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_R11, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_R12, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_R13, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_R14, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_R15, 0);
 
-//  vmm_cpu_set_register(vmid, cpuid, VMM_X64_FS_BASE, 0);
-//  vmm_cpu_set_register(vmid, cpuid, VMM_X64_GS_BASE, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_FS, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_ES, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_GS, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_DS, 0);
+//  vmm_cpu_set_register(vm, cpu, VMM_X64_CS, GSEL(SEG_CODE, 0));
+//  vmm_cpu_set_register(vm, cpu, VMM_X64_DS, GSEL(SEG_DATA, 0));
 
-  vmm_cpu_set_register(vmid, cpuid, VMM_X64_LDTR, 0);
+//  vmm_cpu_set_register(vm, cpu, VMM_X64_FS_BASE, 0);
+//  vmm_cpu_set_register(vm, cpu, VMM_X64_GS_BASE, 0);
+
+  vmm_cpu_set_register(vm, cpu, VMM_X64_LDTR, 0);
 
   //init_fpu();
 
@@ -170,9 +170,9 @@ int
 isl_close(isl_handle_t handle)
 {
   assert(handle == 0);
-  if (vmm_cpu_destroy(vmid) < 0)
+  if (vmm_cpu_destroy(vm, cpu) < 0)
     return -1;
-  if (vmm_destroy(vmid) < 0)
+  if (vmm_destroy(vm) < 0)
     return -1;
   return 0;
 }
