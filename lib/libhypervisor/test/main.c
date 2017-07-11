@@ -46,7 +46,7 @@ int main(void)
   uint8_t *mem;
   int ret;
 
-  vmm_vmid_t vm;
+  vmm_vm_t vm;
   ret = vmm_create(&vm);
   assert(ret == 0);
 
@@ -59,10 +59,10 @@ int main(void)
   memcpy(mem, code, sizeof(code));
 
   /* Map it to the second page frame (to avoid the real-mode IDT at 0). */
-  ret = vmm_memory_map(vm, mem, 0x1000, 0x1000, 0);
+  ret = vmm_memory_map(vm, mem, 0x1000, 0x1000, PROT_READ | PROT_WRITE | PROT_EXEC);
   assert(ret == 0);
 
-  vmm_cpuid_t cpu;
+  vmm_cpu_t cpu;
   ret = vmm_cpu_create(vm, &cpu);
   assert(ret == 0);
 
@@ -72,6 +72,7 @@ int main(void)
    * initial flags required by x86 architecture.
    */
   vmm_cpu_set_register(vm, cpu, VMM_X64_CS, 0);
+  vmm_cpu_set_register(vm, cpu, VMM_X64_CS_BASE, 0);
   vmm_cpu_set_register(vm, cpu, VMM_X64_RIP, 0x1000);
   vmm_cpu_set_register(vm, cpu, VMM_X64_RAX, 2);
   vmm_cpu_set_register(vm, cpu, VMM_X64_RBX, 2);
@@ -79,10 +80,10 @@ int main(void)
 
   /* Repeatedly run code and handle VM exits. */
   while (1) {
-    ret = vmm_cpu_run(vm);
+    ret = vmm_cpu_run(vm, cpu);
     assert(ret == 0);
     uint64_t exit_reason, value;
-    ret = vmm_get(vm, VMM_CTRL_EXIT_REASON, &exit_reason);
+    ret = vmm_cpu_get_state(vm, cpu, VMM_CTRL_EXIT_REASON, &exit_reason);
     assert(ret == 0);
     switch (exit_reason) {
     case VMM_EXIT_HLT:

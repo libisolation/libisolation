@@ -8,13 +8,13 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <errno.h>
 
-#define VMM_ERROR   (-1)
-#define VMM_EBUSY   (-2)
-#define VMM_EINVAL  (-3)
-#define VMM_ENORES  (-4)
-#define VMM_ENODEV  (-5)
-#define VMM_ENOTSUP (-6)
+#define VMM_EBUSY   (-EBUSY)
+#define VMM_EINVAL  (-EINVAL)
+#define VMM_ENOMEM  (-ENOMEM)
+#define VMM_ENODEV  (-ENODEV)
+#define VMM_ENOTSUP (-ENOTSUP)
 
 typedef enum {
   VMM_X64_RIP,
@@ -36,11 +36,29 @@ typedef enum {
   VMM_X64_R14,
   VMM_X64_R15,
   VMM_X64_CS,
+  VMM_X64_CS_BASE,
+  VMM_X64_CS_LIMIT,
+  VMM_X64_CS_AR,
   VMM_X64_SS,
+  VMM_X64_SS_BASE,
+  VMM_X64_SS_LIMIT,
+  VMM_X64_SS_AR,
   VMM_X64_DS,
+  VMM_X64_DS_BASE,
+  VMM_X64_DS_LIMIT,
+  VMM_X64_DS_AR,
   VMM_X64_ES,
+  VMM_X64_ES_BASE,
+  VMM_X64_ES_LIMIT,
+  VMM_X64_ES_AR,
   VMM_X64_FS,
+  VMM_X64_FS_BASE,
+  VMM_X64_FS_LIMIT,
+  VMM_X64_FS_AR,
   VMM_X64_GS,
+  VMM_X64_GS_BASE,
+  VMM_X64_GS_LIMIT,
+  VMM_X64_GS_AR,
   VMM_X64_IDT_BASE,
   VMM_X64_IDT_LIMIT,
   VMM_X64_GDT_BASE,
@@ -81,31 +99,29 @@ enum {
   VMM_EXIT_REASONS_MAX,
 };
 
-typedef int vmm_vmid_t;
+typedef struct vmm_vm *vmm_vm_t;
 
-int vmm_create(vmm_vmid_t *vm);
-int vmm_destroy(vmm_vmid_t vm);
+int vmm_create(vmm_vm_t *vm);
+int vmm_destroy(vmm_vm_t vm);
 
-int vmm_get(vmm_vmid_t vm, int id, uint64_t *value);
-int vmm_set(vmm_vmid_t vm, int id, uint64_t value);
+typedef struct vmm_cpu *vmm_cpu_t;
 
-typedef int vmm_cpuid_t;
-
-int vmm_cpu_create(vmm_vmid_t vm, vmm_cpuid_t *cpu);
-int vmm_cpu_destroy(vmm_vmid_t vm);
-int vmm_cpu_run(vmm_vmid_t vm);
-int vmm_cpu_get_register(vmm_vmid_t vm, vmm_cpuid_t cpu, vmm_x64_reg_t reg, uint64_t *value);
-int vmm_cpu_set_register(vmm_vmid_t vm, vmm_cpuid_t cpu, vmm_x64_reg_t reg, uint64_t value);
-int vmm_cpu_get_msr(vmm_vmid_t vm, vmm_cpuid_t cpu, uint32_t msr, uint64_t *value);
-int vmm_cpu_set_msr(vmm_vmid_t vm, vmm_cpuid_t cpu, uint32_t msr, uint64_t value);
+int vmm_cpu_create(vmm_vm_t vm, vmm_cpu_t *cpu);
+int vmm_cpu_destroy(vmm_vm_t vm, vmm_cpu_t cpu);
+int vmm_cpu_run(vmm_vm_t vm, vmm_cpu_t cpu);
+int vmm_cpu_get_register(vmm_vm_t vm, vmm_cpu_t cpu, vmm_x64_reg_t reg, uint64_t *value);
+int vmm_cpu_set_register(vmm_vm_t vm, vmm_cpu_t cpu, vmm_x64_reg_t reg, uint64_t value);
+int vmm_cpu_get_msr(vmm_vm_t vm, vmm_cpu_t cpu, uint32_t msr, uint64_t *value);
+int vmm_cpu_set_msr(vmm_vm_t vm, vmm_cpu_t cpu, uint32_t msr, uint64_t value);
+int vmm_cpu_get_state(vmm_vm_t vm, vmm_cpu_t cpu, int id, uint64_t *value);
+int vmm_cpu_set_state(vmm_vm_t vm, vmm_cpu_t cpu, int id, uint64_t value);
 
 typedef const void *vmm_uvaddr_t;
 typedef uint64_t vmm_gpaddr_t;
-typedef uint64_t vmm_memory_flags_t;
 
-int vmm_memory_map(vmm_vmid_t vm, vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, vmm_memory_flags_t flags);
-int vmm_memory_unmap(vmm_vmid_t vm, vmm_gpaddr_t gpa, size_t size);
-int vmm_memory_protect(vmm_vmid_t vm, vmm_gpaddr_t gpa, size_t size, vmm_memory_flags_t flags);
+int vmm_memory_map(vmm_vm_t vm, vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, int prot);
+int vmm_memory_unmap(vmm_vm_t vm, vmm_gpaddr_t gpa, size_t size);
+int vmm_memory_protect(vmm_vm_t vm, vmm_gpaddr_t gpa, size_t size, int prot);
 
 #ifdef __cplusplus
 }
