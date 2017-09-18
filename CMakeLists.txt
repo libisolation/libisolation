@@ -1,20 +1,19 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(libisolation)
+project(libisolation C CXX)
 
 include(GNUInstallDirs)
 enable_testing()
 
-set(CMAKE_C_FLAGS "-std=gnu11")
-set(CMAKE_C_FLAGS_RELEASE "-Wall -O2")
-set(CMAKE_C_FLAGS_DEBUG "-g -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "-Wall -O2")
+set(CMAKE_CXX_FLAGS_DEBUG "-g3 -O0")
 
 add_subdirectory(lib/libhypervisor)
 
 include_directories(include lib/libhypervisor/include)
 
 set(SOURCES
-  src/isolation.c)
+  src/isolation.cxx)
 
 set(HEADERS
   include/isolation.h)
