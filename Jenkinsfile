@@ -12,7 +12,6 @@ node {
 
     stage "Test"
     sh '''cd build
-      newgrp - kvm
-      make test ARGS=-V
+      sg kvm -c "make test ARGS=-V"
     '''
 }
