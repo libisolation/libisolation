@@ -1,9 +1,15 @@
 #include <isolation.h>
 #include <stdio.h>
 #include <assert.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <grp.h>
 
 int main()
 {
+  struct group *kvmgid = getgrnam("kvm");
+  assert(kvmgid->gr_gid == getegid());
+
   isl_handle_t h = isl_open("test.so");
 
   assert(h >= 0);
