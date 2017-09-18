@@ -7,10 +7,12 @@ node {
     sh '''mkdir -p build
       cd build
       cmake -DCMAKE_BUILD_TYPE=Release ..
-      make'''
+      make
+    '''
 
     stage "Test"
     sh '''cd build
       newgrp - kvm
-      make test ARGS=-V'''
+      make test ARGS=-V
+    '''
 }
