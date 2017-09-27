@@ -12,6 +12,6 @@ node {
 
     stage "Test"
     sh '''cd build
-      sg kvm -c "make test ARGS=-V"
+      make test ARGS=-V
     '''
 }
