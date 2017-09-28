@@ -84,23 +84,41 @@ vmm_destroy(vmm_vm_t vm)
 int
 vmm_memory_map(vmm_vm_t vm, vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, int prot)
 {
+  static uint32_t slot = 0;
+  return vmm_memregion_set(vm, slot++, uva, gpa, size, prot);
+}
+
+int
+vmm_memregion_set(vmm_vm_t vm, uint32_t reg_slot, vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, int prot)
+{
   int valid_prots = PROT_READ | PROT_WRITE | PROT_EXEC;
 
   if (prot & ~valid_prots)
     return VMM_EINVAL;
-  if ((prot & PROT_EXEC) == 0)
+  if ((prot & PROT_EXEC) == 0) // Non-executable cannot be supported directly on KVM
     return VMM_EINVAL;
 
   struct kvm_userspace_memory_region region = {
-    .slot = 0, // FIXME
+    .slot = reg_slot,
     .flags = (prot & PROT_WRITE) == 0 ? KVM_MEM_READONLY : 0,
     .guest_phys_addr = gpa,
     .memory_size = size,
     .userspace_addr = (uint64_t)uva,
   };
-  int ret;
+  if (ioctl(vm->vmfd, KVM_SET_USER_MEMORY_REGION, &region) < 0)
+    return -errno;
 
-  if ((ret = ioctl(vm->vmfd, KVM_SET_USER_MEMORY_REGION, &region)) < 0)
+  return 0;
+}
+
+int
+vmm_memregion_unset(vmm_vm_t vm, uint32_t reg_slot)
+{
+  struct kvm_userspace_memory_region zero_region = {
+    .slot = reg_slot,
+    .memory_size = 0,
+  };
+  if (ioctl(vm->vmfd, KVM_SET_USER_MEMORY_REGION, &zero_region) < 0)
     return -errno;
 
   return 0;

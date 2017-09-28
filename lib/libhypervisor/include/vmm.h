@@ -119,9 +119,28 @@ int vmm_cpu_set_state(vmm_vm_t vm, vmm_cpu_t cpu, int id, uint64_t value);
 typedef const void *vmm_uvaddr_t;
 typedef uint64_t vmm_gpaddr_t;
 
+
+/* TODO: Abstract memory map management in Linux KVM */
+#ifdef __APPLE__
+
 int vmm_memory_map(vmm_vm_t vm, vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, int prot);
 int vmm_memory_unmap(vmm_vm_t vm, vmm_gpaddr_t gpa, size_t size);
 int vmm_memory_protect(vmm_vm_t vm, vmm_gpaddr_t gpa, size_t size, int prot);
+
+#elif __linux__
+
+#include <linux/kvm.h>
+typedef struct kvm_userspace_memory_region *vmm_memregion_t;
+
+int vmm_memregion_set(vmm_vm_t vm, uint32_t reg_slot, vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, int prot);
+int vmm_memregion_unset(vmm_vm_t vm, uint32_t reg_slot);
+
+int vmm_memory_map(vmm_vm_t vm, vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, int prot) __attribute__ ((warning ("vmm_memory_map is not fully supported for KVM")));
+int vmm_memory_unmap(vmm_vm_t vm, vmm_gpaddr_t gpa, size_t size) __attribute__ ((error ("vmm_memory_unmap is not supported for KVM")));
+int vmm_memory_protect(vmm_vm_t vm, vmm_gpaddr_t gpa, size_t size, int prot) __attribute__ ((error ("vmm_memory_protect is not supported for KVM")));
+
+#endif
+
 
 #ifdef __cplusplus
 }
