@@ -76,6 +76,8 @@ typedef enum {
   VMM_X64_CR2,
   VMM_X64_CR3,
   VMM_X64_CR4,
+  VMM_X64_CR8,
+  VMM_X64_EFER,
   VMM_X64_DR0,
   VMM_X64_DR1,
   VMM_X64_DR2,
@@ -96,6 +98,7 @@ enum {
 enum {
   VMM_EXIT_HLT,
   VMM_EXIT_IO,
+  VMM_EXIT_FAIL_ENTRY,
   VMM_EXIT_REASONS_MAX,
 };
 

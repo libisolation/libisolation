@@ -108,7 +108,7 @@ int main(void)
      ret = vmm_cpu_get_register(vm, cpu, VMM_X64_RIP, &value);
      assert(ret == 0);
      fprintf(stderr, "ip = 0x%lx\n", value);
-     fprintf(stderr, "exit_reason = 0x%lx", exit_reason);
+     fprintf(stderr, "exit_reason = 0x%lx\n", exit_reason);
      abort();
     }
   }
