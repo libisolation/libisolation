@@ -226,14 +226,14 @@ struct kvm_sregs {
 #define EXTRACT(value, l, r) (((value) & ((1 << (l + 1)) - 1)) >> r)
 
 #define SET_AR(ar, value) do {\
-  ar.type    = EXTRACT(value, 11, 8);\
-  ar.present = EXTRACT(value, 15, 15);\
-  ar.dpl     = EXTRACT(value, 14, 13);\
-  ar.db      = EXTRACT(value, 22, 22);\
-  ar.s       = EXTRACT(value, 12, 12);\
-  ar.l       = EXTRACT(value, 21, 21);\
-  ar.g       = EXTRACT(value, 23, 23);\
-  ar.avl     = EXTRACT(value, 20, 20);\
+  ar.type    = EXTRACT(value, 3, 0);\
+  ar.present = EXTRACT(value, 7, 7);\
+  ar.dpl     = EXTRACT(value, 6, 5);\
+  ar.db      = EXTRACT(value, 14, 14);\
+  ar.s       = EXTRACT(value, 4, 4);\
+  ar.l       = EXTRACT(value, 13, 13);\
+  ar.g       = EXTRACT(value, 15, 15);\
+  ar.avl     = EXTRACT(value, 12, 12);\
 } while (0)
 
 int
