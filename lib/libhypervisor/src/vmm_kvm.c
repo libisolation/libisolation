@@ -327,6 +327,8 @@ vmm_cpu_set_register(vmm_vm_t vm, vmm_cpu_t cpu, vmm_x64_reg_t reg, uint64_t val
   CASE(VMM_X64_CR2, sregs.cr2);
   CASE(VMM_X64_CR3, sregs.cr3);
   CASE(VMM_X64_CR4, sregs.cr4);
+  CASE(VMM_X64_CR8, sregs.cr8);
+  CASE(VMM_X64_EFER, sregs.efer);
   case VMM_X64_DR0:
   case VMM_X64_DR1:
   case VMM_X64_DR2:
@@ -511,9 +513,10 @@ vmm_cpu_get_state(vmm_vm_t vm, vmm_cpu_t cpu, int id, uint64_t *value)
     switch (cpu->run->exit_reason) {
     case KVM_EXIT_HLT: *value = VMM_EXIT_HLT; break;
     case KVM_EXIT_IO:  *value = VMM_EXIT_IO; break;
+    case KVM_EXIT_FAIL_ENTRY:  *value = VMM_EXIT_FAIL_ENTRY; break;
     default:
       *value = VMM_EXIT_REASONS_MAX;
-      fprintf(stderr, "%d", cpu->run->exit_reason);
+      fprintf(stderr, "EXIT_REASON: %d\n", cpu->run->exit_reason);
       assert(false);
       return -1;
     }
