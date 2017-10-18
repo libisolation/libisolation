@@ -13,7 +13,7 @@ add_subdirectory(lib/libhypervisor)
 include_directories(include lib/libhypervisor/include)
 
 set(SOURCES
-  src/isolation.cxx)
+  src/isolation.cpp)
 
 set(HEADERS
   include/isolation.h)
