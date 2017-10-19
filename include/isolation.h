@@ -27,8 +27,8 @@ typedef int isl_sym_t;
  *
  * NB: isl_sym currently only supports functions of type "void *f(void *)".
  */
-isl_sym_t isl_sym(int handle, const char *symbol);
-void isl_free(int handle, isl_sym_t f);
+isl_sym_t isl_sym(isl_handle_t handle, const char *symbol);
+void isl_free(isl_handle_t handle, isl_sym_t f);
 
 typedef enum {
   ISL_SUCCESS = 0,
@@ -46,15 +46,15 @@ typedef enum {
  * NB: Currently isl_call only supports one argument; args must be always an array of one pointer to some pointer.
  * TODO: add a parameter to specify which events are trapped.
  */
-isl_return_t isl_call(int handle, isl_sym_t f, void *args[], void **ret);
-isl_return_t isl_resume(int handle, void **ret);
+isl_return_t isl_call(isl_handle_t handle, isl_sym_t f, void *args[], void **ret);
+isl_return_t isl_resume(isl_handle_t handle, void **ret);
 
 /*
  * Allow/disallow the program in the VM to read/write/execute a memory region specified by _addr_ and _length_.
  * Remember that the guest program shares the same address space with the host program.
  */
-int isl_map(int handle, void *addr, size_t length, int prot);
-int isl_unmap(int handle, void *addr, size_t length);
+int isl_map(isl_handle_t handle, void *addr, size_t length, int prot);
+int isl_unmap(isl_handle_t handle, void *addr, size_t length);
 
 #ifdef __cplusplus
 }
