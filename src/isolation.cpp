@@ -64,7 +64,7 @@ load_elf(vmm_vm_t vm, Elf64_Ehdr *ehdr)
     map_top = std::max(map_top, vaddr + size);
   }
 
-  void *mem = mmap(0, map_top - map_bottom, PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  void *mem = mmap(0, map_top - map_bottom, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
   for (int i = 0; i < ehdr->e_phnum; i++) {
     if (p[i].p_type != PT_LOAD) {
@@ -151,4 +151,44 @@ isl_close(isl_handle_t handle)
   if (vmm_destroy(vm) < 0)
     return -1;
   return 0;
+}
+
+static isl_return_t
+isl_vm_run(isl_handle_t handle, void *ret)
+{
+  uint64_t exit_reason, rip, rax;
+  int err = vmm_cpu_run(vm, cpu);
+  assert(err == 0);
+  vmm_cpu_get_register(vm, cpu, VMM_X64_RAX, &rax);
+  vmm_cpu_get_register(vm, cpu, VMM_X64_RIP, &rip);
+  vmm_cpu_get_state(vm, cpu, VMM_CTRL_EXIT_REASON, &exit_reason);
+  switch (exit_reason) {
+    case VMM_EXIT_FAIL_ENTRY:
+      return ISL_ERROR;
+    case VMM_EXIT_HLT:
+      *reinterpret_cast<uint64_t *>(ret) = rax;
+      return ISL_SUCCESS;
+    case VMM_EXIT_IO:
+      return ISL_EEXTCALL;
+    default:
+      fprintf(stderr, "Unsuported error\n");
+      fprintf(stderr, "ip = 0x%lx\n", rip);
+      fprintf(stderr, "exit_reason = 0x%lx", exit_reason);
+      abort();
+  }
+}
+
+isl_return_t
+isl_call(isl_handle_t handle, isl_sym_t f, void *args[], void *ret)
+{
+  // TODO: push args
+
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RIP, f);
+  return isl_vm_run(handle, ret);
+}
+
+isl_return_t
+isl_resume(isl_handle_t handle, void *ret)
+{
+  return isl_vm_run(handle, ret);
 }

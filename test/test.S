@@ -1,7 +1,5 @@
-  .intel_syntax noprefix
-
   .text
   .global test
 test:
-  add rax, rbx
+  addq $42, %rax
   hlt

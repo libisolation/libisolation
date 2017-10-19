@@ -85,7 +85,7 @@ int
 vmm_memory_map(vmm_vm_t vm, vmm_uvaddr_t uva, vmm_gpaddr_t gpa, size_t size, int prot)
 {
   static uint32_t slot = 0;
-  return vmm_memregion_set(vm, slot++, uva, gpa, size, prot);
+  return vmm_memregion_set(vm, slot++, uva, gpa, size, prot | PROT_EXEC);  // non-PROT_EXEC is not supported on kvm
 }
 
 int

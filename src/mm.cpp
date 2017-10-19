@@ -29,7 +29,6 @@ kmap(vmm_vm_t vm, void *ptr, size_t size, int flags)
   assert(((uint64_t) ptr & 0xfff) == 0);
 
   //record_region(&vkern_mm, ptr, noah_kern_brk, size, hv_mflag_to_linux_mprot(flags), -1, -1, 0);
-  flags |= PROT_EXEC;  // non-PROT_EXEC is not supported on kvm
   vmm_memory_map(vm, ptr, noah_kern_brk, size, flags);
   noah_kern_brk += size;
 

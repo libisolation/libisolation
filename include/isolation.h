@@ -36,18 +36,20 @@ typedef enum {
   ISL_EFAULT = -2,
   ISL_ESYSCALL = -3,
   ISL_EEXTCALL = -4,
-  ISL_ERROR = - 5,
+  ISL_ERROR = -5,
 } isl_return_t;
 
 /*
  * Calls a function _f_ in the VM with arguments _args_.
  * Sensitive events occured in the VM are trapped and notified to the host.
  *
- * NB: Currently isl_call only supports one argument; args must be always an array of one pointer to some pointer.
+ * NB: Currently isl_call only supports
+ *   * One argument. Args must be always an array of one pointer to some pointer.
+ *   * Returning a value by general register; only an integral number or a pointer can be returned.
  * TODO: add a parameter to specify which events are trapped.
  */
-isl_return_t isl_call(isl_handle_t handle, isl_sym_t f, void *args[], void **ret);
-isl_return_t isl_resume(isl_handle_t handle, void **ret);
+isl_return_t isl_call(isl_handle_t handle, isl_sym_t f, void *args[], void *ret);
+isl_return_t isl_resume(isl_handle_t handle, void *ret);
 
 /*
  * Allow/disallow the program in the VM to read/write/execute a memory region specified by _addr_ and _length_.
