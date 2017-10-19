@@ -10,13 +10,12 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <algorithm>
 
 #include <vmm.h>
 #include "elf.h"
 #include "mm.hpp"
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX(a, b) ((a) < (b) ? (b) : (a))
 #define ROUNDUP(N, S) ((((N) + (S) - 1) / (S)) * (S))
 typedef unsigned long ulong;
 
@@ -61,8 +60,8 @@ load_elf(vmm_vm_t vm, Elf64_Ehdr *ehdr)
     ulong offset = p[i].p_vaddr & PAGE_ALIGN_MASK;
     ulong size = ROUNDUP(p[i].p_memsz + offset, PAGE_4KB);
 
-    map_bottom = MIN(map_bottom, vaddr);
-    map_top = MAX(map_top, vaddr + size);
+    map_bottom = std::max(map_bottom, vaddr);
+    map_top = std::max(map_top, vaddr + size);
   }
 
   void *mem = mmap(0, map_top - map_bottom, PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
