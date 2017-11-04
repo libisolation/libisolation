@@ -18,8 +18,6 @@
 #include "types.hpp"
 #include "mm.hpp"
 
-static const gaddr_t user_addr_max = 0x0000007fc0000000ULL;
-
 gaddr_t
 kmap(vmm_vm_t vm, void *ptr, size_t size, int flags)
 {

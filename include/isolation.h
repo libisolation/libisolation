@@ -44,11 +44,11 @@ typedef enum {
  * Sensitive events occured in the VM are trapped and notified to the host.
  *
  * NB: Currently isl_call only supports
- *   * One argument. Args must be always an array of one pointer to some pointer.
+ *   * Integral or pointer arguments. Args must be always an array of uint64_t values
  *   * Returning a value by general register; only an integral number or a pointer can be returned.
  * TODO: add a parameter to specify which events are trapped.
  */
-isl_return_t isl_call(isl_handle_t handle, isl_sym_t f, void *args[], void *ret);
+isl_return_t isl_call(isl_handle_t handle, isl_sym_t f, uint64_t (*args)[6], void *ret);
 isl_return_t isl_resume(isl_handle_t handle, void *ret);
 
 /*

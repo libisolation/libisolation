@@ -22,6 +22,8 @@ typedef unsigned long ulong;
 static vmm_vm_t vm;
 static vmm_cpu_t cpu;
 
+static uint64_t trampoline_addr;
+
 static int
 load_elf(vmm_vm_t vm, Elf64_Ehdr *ehdr)
 {
@@ -43,9 +45,6 @@ load_elf(vmm_vm_t vm, Elf64_Ehdr *ehdr)
   Elf64_Phdr *p = (Elf64_Phdr *) ((char *) ehdr + ehdr->e_phoff);
 
   ulong map_top = 0, map_bottom = ULONG_MAX;
-
-#define PAGE_4KB 4096
-#define PAGE_ALIGN_MASK (PAGE_4KB - 1)
 
   for (int i = 0; i < ehdr->e_phnum; i++) {
     if (p[i].p_type == PT_INTERP) {
@@ -85,10 +84,21 @@ load_elf(vmm_vm_t vm, Elf64_Ehdr *ehdr)
     memcpy((char *) mem + offset, (char *) ehdr + p[i].p_offset, p[i].p_filesz);
   }
 
-  // // construct stack
-  // do_mmap(STACK_TOP - STACK_SIZE, STACK_SIZE, PROT_READ | PROT_WRITE, LINUX_PROT_READ | LINUX_PROT_WRITE, LINUX_MAP_PRIVATE | LINUX_MAP_FIXED | LINUX_MAP_ANONYMOUS, -1, 0);
-  // vmm_set_register(vmid, cpuid, VMM_X64_RSP, STACK_TOP);
-  // vmm_set_register(vmid, cpuid, VMM_X64_RBP, STACK_TOP);
+  // construct trampoline
+  void *trampoline_mem = mmap(0, PAGE_4KB, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  trampoline_addr = ROUNDUP(map_top + PAGE_4KB, PAGE_4KB);
+  *(char *)trampoline_mem = 0xf4; // hlt
+  vmm_memory_map(vm, trampoline_mem, trampoline_addr, PAGE_4KB, PROT_EXEC | PROT_READ);
+
+  static const uint64_t STACK_TOP = user_addr_max;
+  static const uint64_t STACK_SIZE = 0x2000;
+
+  // construct stack
+  void *stack = mmap(0, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  vmm_memory_map(vm, stack, STACK_TOP - STACK_SIZE, STACK_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE);
+  *(uint64_t *)((char *)stack + STACK_SIZE - sizeof(uint64_t)) = trampoline_addr;
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RSP, STACK_TOP - sizeof(uint64_t));
+  vmm_cpu_set_register(vm, cpu, VMM_X64_RBP, STACK_TOP - sizeof(uint64_t));
 
   return 0;
 }
@@ -179,9 +189,16 @@ isl_vm_run(isl_handle_t handle, void *ret)
 }
 
 isl_return_t
-isl_call(isl_handle_t handle, isl_sym_t f, void *args[], void *ret)
+isl_call(isl_handle_t handle, isl_sym_t f, uint64_t (*args)[6], void *ret)
 {
-  // TODO: push args
+  if (args) {
+    vmm_cpu_set_register(vm, cpu, VMM_X64_RDI, (*args)[0]);
+    vmm_cpu_set_register(vm, cpu, VMM_X64_RSI, (*args)[1]);
+    vmm_cpu_set_register(vm, cpu, VMM_X64_RDX, (*args)[2]);
+    vmm_cpu_set_register(vm, cpu, VMM_X64_RCX, (*args)[3]);
+    vmm_cpu_set_register(vm, cpu, VMM_X64_R8, (*args)[4]);
+    vmm_cpu_set_register(vm, cpu, VMM_X64_R9, (*args)[5]);
+  }
 
   vmm_cpu_set_register(vm, cpu, VMM_X64_RIP, f);
   return isl_vm_run(handle, ret);
